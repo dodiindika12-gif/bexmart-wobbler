@@ -94,7 +94,7 @@ export default function App() {
 
         const rawJsonData = window.XLSX.utils.sheet_to_json(worksheet, { 
           defval: "", 
-          raw: false // Membaca apa adanya sebagai teks yang terlihat di layar Excel
+          raw: false 
         });
         
         // Normalisasi key
@@ -116,17 +116,34 @@ export default function App() {
     reader.readAsArrayBuffer(file);
   };
 
-  const handleImageUpload = (e) => {
+  // PERBAIKAN 1: Membaca gambar produk sebagai DataURL (Base64)
+  const handleImageUpload = async (e) => {
     const files = Array.from(e.target.files);
     const newImages = { ...images };
-    files.forEach(file => { newImages[file.name] = URL.createObjectURL(file); });
+
+    const readAsDataURL = (file) => {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.readAsDataURL(file);
+      });
+    };
+
+    for (const file of files) {
+      newImages[file.name] = await readAsDataURL(file);
+    }
     setImages(newImages);
   };
 
+  // PERBAIKAN 2: Membaca Template Background sebagai DataURL (Base64)
   const handleTemplateUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setTemplateImg(URL.createObjectURL(file));
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setTemplateImg(reader.result);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -145,9 +162,11 @@ export default function App() {
         const element = document.getElementById(`page-${i}`);
         if (element) {
           const canvas = await window.html2canvas(element, {
-            scale: 2, // Resolusi tinggi (Retina)
+            scale: 2, // Resolusi tinggi
             useCORS: true,
-            backgroundColor: "#ffffff"
+            allowTaint: true, // Mengizinkan elemen lintas sumber jika ada
+            backgroundColor: "#ffffff",
+            logging: false
           });
           
           const link = document.createElement('a');
@@ -162,7 +181,7 @@ export default function App() {
       showToast("Semua gambar berhasil diunduh!");
     } catch (error) {
       console.error("Gagal membuat gambar:", error);
-      showToast("Terjadi kesalahan saat membuat gambar.");
+      showToast("Terjadi kesalahan sistem saat merender gambar.");
     } finally {
       setIsGenerating(false);
     }
@@ -287,16 +306,19 @@ export default function App() {
                       return (
                         <div key={`wobbler-${itemIndex}`} className="w-[104mm] h-[104mm] rounded-full relative overflow-hidden" 
                              style={{ 
-                               backgroundImage: templateImg ? `url(${templateImg})` : 'radial-gradient(circle, #3b82f6 0%, #1e3a8a 100%)',
-                               backgroundSize: '100% 100%', 
-                               backgroundPosition: 'center',
-                               backgroundRepeat: 'no-repeat',
                                border: templateImg ? 'none' : '3px solid white',
+                               // Diganti fallbacknya agar tidak bergantung sepenuhnya pada background-image jika error
+                               background: templateImg ? 'transparent' : 'radial-gradient(circle, #3b82f6 0%, #1e3a8a 100%)',
                              }}>
                           
+                          {/* PERBAIKAN 3: Background Template Menggunakan Tag <img> Murni bukan background CSS */}
+                          {templateImg && (
+                            <img src={templateImg} alt="template" className="absolute inset-0 w-full h-full object-fill z-0" />
+                          )}
+
                           {/* Fallback Jika Tidak Ada Template */}
                           {!templateImg && (
-                             <div className="absolute top-[8%] w-full text-center text-white text-[13px] font-bold">BEXmart<br/>PROMO SUPER HEMAT<br/>(UPLOAD TEMPLATE PNG)</div>
+                             <div className="absolute top-[8%] w-full text-center text-white text-[13px] font-bold z-10">BEXmart<br/>PROMO SUPER HEMAT<br/>(UPLOAD TEMPLATE PNG)</div>
                           )}
 
                           {/* Teks Periode */}
@@ -322,11 +344,11 @@ export default function App() {
                           </div>
 
                           {/* Gambar Produk */}
-                          <div className="absolute top-[37%] right-[8%] w-[38%] h-[32%] flex justify-center items-center z-10">
+                          <div className="absolute top-[37%] right-[8%] w-[38%] h-[32%] flex justify-center items-center z-10 bg-transparent">
                             {imgSrc ? (
-                              <img src={imgSrc} className="max-w-full max-h-full object-contain drop-shadow-md" />
+                              <img src={imgSrc} className="max-w-full max-h-full object-contain drop-shadow-md z-10" />
                             ) : (
-                              <div className="text-[9px] text-gray-400 border border-gray-300 p-1">No Img</div>
+                              <div className="text-[9px] text-gray-400 border border-gray-300 p-1 bg-white z-10">No Img</div>
                             )}
                           </div>
 
