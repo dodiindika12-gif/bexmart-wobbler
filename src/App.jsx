@@ -53,7 +53,7 @@ export default function App() {
     const reader = new FileReader();
     reader.onload = (event) => {
       const text = event.target.result;
-      const rows = text.split('\\n');
+      const rows = text.split('\n');
       const headers = rows[0].split(',').map(h => h.trim());
       const parsedData = [];
       for (let i = 1; i < rows.length; i++) {
@@ -159,7 +159,7 @@ export default function App() {
                     return (
                       <div key={`wobbler-${itemIndex}`} className="w-[64mm] h-[64mm] rounded-full mx-auto relative overflow-hidden" 
                            style={{ 
-                             backgroundImage: templateImg ? \`url(\${templateImg})\` : 'radial-gradient(circle, #3b82f6 0%, #1e3a8a 100%)',
+                             backgroundImage: templateImg ? `url(${templateImg})` : 'radial-gradient(circle, #3b82f6 0%, #1e3a8a 100%)',
                              backgroundSize: '100% 100%', 
                              backgroundPosition: 'center',
                              backgroundRepeat: 'no-repeat',
