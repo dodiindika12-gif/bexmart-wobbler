@@ -101,9 +101,19 @@ export default function App() {
         const firstSheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[firstSheetName];
 
-        const jsonData = window.XLSX.utils.sheet_to_json(worksheet, { 
+        const rawJsonData = window.XLSX.utils.sheet_to_json(worksheet, { 
           defval: "", 
-          raw: false 
+          raw: false // Membaca apa adanya sebagai teks yang terlihat di layar Excel
+        });
+        
+        // Normalisasi key untuk menghindari masalah spasi atau huruf kapital di Excel
+        const jsonData = rawJsonData.map(row => {
+          const newRow = {};
+          for (const key in row) {
+            const cleanKey = key.trim().toLowerCase();
+            newRow[cleanKey] = String(row[key]);
+          }
+          return newRow;
         });
         
         setData(jsonData);
@@ -237,12 +247,12 @@ export default function App() {
 
                         {/* Teks Periode (Pita Kuning Atas) */}
                         <div className="absolute top-[30%] w-full text-center text-[13px] font-extrabold text-black uppercase tracking-tight z-10">
-                          PERIODE: {item.periode || 'TANGGAL BELUM DISET'}
+                          {item.periode || ''}
                         </div>
 
                         {/* Nama Produk (Kiri Area Putih) */}
                         <div className="absolute top-[42%] left-[8%] w-[42%] text-[12px] font-bold text-black text-left leading-tight z-10">
-                          {item.nama_produk || 'NAMA PRODUK'}
+                          {item.nama_produk || ''}
                         </div>
 
                         {/* Teks "KINI HANYA" (Kotak Kuning Kecil) */}
@@ -253,8 +263,8 @@ export default function App() {
                         {/* Area Harga (Blok Merah) */}
                         <div className="absolute top-[65.5%] left-[13.5%] flex items-baseline text-white z-10">
                           <span className="text-[16px] font-bold mr-[1px]">Rp</span>
-                          <span className="text-[42px] font-black tracking-tighter leading-none">{item.harga_promo || '0'}</span>
-                          <span className="text-[10px] font-bold ml-[3px]">{item.satuan || '/ PCS'}</span>
+                          <span className="text-[42px] font-black tracking-tighter leading-none">{item.harga_promo || ''}</span>
+                          <span className="text-[10px] font-bold ml-[3px]">{item.satuan || ''}</span>
                         </div>
 
                         {/* Gambar Produk (Kanan Area Putih) */}
@@ -268,7 +278,7 @@ export default function App() {
 
                         {/* Keterangan Bawah (Area Biru Paling Bawah) */}
                         <div className="absolute bottom-[3%] w-full text-center text-[9px] font-bold text-white z-10">
-                          {item.keterangan_bawah || 'Promo Khusus Member'}
+                          {item.keterangan_bawah || ''}
                         </div>
 
                       </div>
