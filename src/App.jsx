@@ -270,36 +270,36 @@ export default function App() {
                           )}
 
                           {/* 2. Teks Periode */}
-                          <text x="52" y="32.5" fontSize="4.2" fontWeight="900" fill="#000" fontFamily="Arial, Helvetica, sans-serif" textAnchor="middle">
+                          <text x="52" y="34.5" fontSize="3.5" fontWeight="900" fill="#000" fontFamily="Arial, Helvetica, sans-serif" textAnchor="middle">
                             {item.periode || ''}
                           </text>
 
                           {/* 3. Teks Nama Produk (Auto-wrap) */}
-                          <text x="9" y="44" fontSize="3.8" fontWeight="bold" fill="#000" fontFamily="Arial, Helvetica, sans-serif">
+                          <text x="8.5" y="46.5" fontSize="3.2" fontWeight="bold" fill="#000" fontFamily="Arial, Helvetica, sans-serif">
                             {productNameLines.map((line, lIdx) => (
-                              <tspan x="9" dy={lIdx === 0 ? 0 : 4.5} key={lIdx}>{line}</tspan>
+                              <tspan x="8.5" dy={lIdx === 0 ? 0 : 3.8} key={lIdx}>{line}</tspan>
                             ))}
                           </text>
 
                           {/* 4. Teks KINI HANYA */}
-                          <text x="15" y="62.5" fontSize="3.5" fontWeight="900" fill="#000" fontFamily="Arial, Helvetica, sans-serif">
+                          <text x="14.5" y="62.5" fontSize="3" fontWeight="900" fill="#000" fontFamily="Arial, Helvetica, sans-serif">
                             KINI HANYA
                           </text>
 
                           {/* 5. Teks Harga Promo */}
-                          <text x="14" y="76" fill="#ffffff" fontFamily="Arial, Helvetica, sans-serif" fontWeight="900">
-                            <tspan fontSize="5">Rp </tspan>
-                            <tspan fontSize="16.5" letterSpacing="-1">{item.harga_promo || ''}</tspan>
-                            <tspan fontSize="3.5"> {item.satuan || ''}</tspan>
+                          <text x="14" y="78" fill="#ffffff" fontFamily="Arial, Helvetica, sans-serif" fontWeight="900">
+                            <tspan fontSize="4.5">Rp </tspan>
+                            <tspan fontSize="11.5" letterSpacing="-0.5">{item.harga_promo || ''}</tspan>
+                            <tspan fontSize="2.8" fontWeight="bold"> {item.satuan || ''}</tspan>
                           </text>
 
                           {/* 6. Gambar Produk */}
                           {imgSrc && (
-                            <image href={imgSrc} x="59" y="39" width="37" height="34" preserveAspectRatio="xMidYMid meet" />
+                            <image href={imgSrc} x="58" y="38" width="38" height="34" preserveAspectRatio="xMidYMid meet" />
                           )}
 
                           {/* 7. Keterangan Bawah */}
-                          <text x="52" y="100.5" fontSize="3" fontWeight="bold" fill="#ffffff" fontFamily="Arial, Helvetica, sans-serif" textAnchor="middle">
+                          <text x="52" y="100.5" fontSize="2.5" fontWeight="bold" fill="#ffffff" fontFamily="Arial, Helvetica, sans-serif" textAnchor="middle">
                             {item.keterangan_bawah || ''}
                           </text>
 
