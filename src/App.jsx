@@ -92,12 +92,15 @@ export default function App() {
       return;
     }
 
-        // Ambil sheet pertama
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const fileData = new Uint8Array(event.target.result);
+        const workbook = window.XLSX.read(fileData, { type: 'array' });
+
         const firstSheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[firstSheetName];
 
-        // PERBAIKAN DI SINI: Tambahkan `raw: false` agar angka yang diformat (seperti 12.790)
-        // dibaca persis seperti teks yang terlihat di layar Excel, bukan nilai aslinya.
         const jsonData = window.XLSX.utils.sheet_to_json(worksheet, { 
           defval: "", 
           raw: false 
