@@ -13,18 +13,29 @@ const PrinterIcon = () => (
 
 const printStyles = `
   @media print {
-    @page { size: 330mm 215mm; margin: 3mm; }
-    body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    @page { size: 330mm 215.9mm; margin: 0; }
+    html, body {
+      width: 330mm;
+      height: 215.9mm;
+      margin: 0;
+      padding: 0;
+      -webkit-print-color-adjust: exact !important; 
+      print-color-adjust: exact !important;
+    }
     .no-print { display: none !important; }
     .print-container { margin: 0; padding: 0; width: 100%; background-color: transparent; }
     .print-page {
       page-break-after: always;
       display: flex !important;
-      width: 324mm; height: 209mm;
-      align-items: center; justify-content: center;
+      width: 330mm !important; 
+      height: 215.9mm !important;
+      align-items: center !important; 
+      justify-content: center !important;
       box-shadow: none !important;
       border: none !important;
       background-color: transparent !important;
+      margin: 0 auto !important;
+      padding: 0 !important;
     }
   }
 `;
@@ -247,14 +258,14 @@ export default function App() {
         ) : (
           <div className="flex flex-col items-center gap-14">
             {chunkedData.map((pageData, pageIndex) => (
-              <div key={`page-wrapper-${pageIndex}`} className="print-page flex flex-col items-center bg-white shadow-xl relative" style={{ width: '330mm', minHeight: '215mm', padding: '3mm', boxSizing: 'border-box' }}>
+              <div key={`page-wrapper-${pageIndex}`} className="print-page flex flex-col items-center justify-center bg-white shadow-xl relative" style={{ width: '330mm', minHeight: '215.9mm', boxSizing: 'border-box' }}>
                 <div className="no-print absolute -top-8 text-sm font-bold text-gray-500 bg-white px-4 py-1 rounded-full shadow-sm border border-gray-200">
                   Pratinjau Lembar F4 - Ke {pageIndex + 1}
                 </div>
                 
-                {/* AREA WOBBLER */}
+                {/* AREA WOBBLER - Ditambahkan justify-center dan m-auto agar pas di tengah */}
                 <div 
-                  className="grid grid-flow-col gap-[1mm] h-full items-center" 
+                  className="grid grid-flow-col gap-[1mm] items-center justify-center m-auto" 
                   style={{ 
                     gridTemplateColumns: 'repeat(3, 104mm)', 
                     gridTemplateRows: 'repeat(2, 104mm)' 
