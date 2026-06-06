@@ -131,6 +131,8 @@ export default function App() {
     
     const serializer = new XMLSerializer();
     let source = serializer.serializeToString(svgElement);
+    
+    // Pastikan header XML valid
     source = '<?xml version="1.0" standalone="no"?>\r\n' + source;
     
     const url = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(source);
@@ -227,11 +229,12 @@ export default function App() {
                 </button>
               </div>
 
-              {/* KANVAS SVG MURNI - Tampil sempurna di Web, PDF, dan CorelDraw */}
+              {/* KANVAS SVG MURNI - PERBAIKAN: Penambahan xmlns:xlink agar gambar terbaca CorelDraw */}
               <div className="bg-white shadow-xl flex justify-center items-center" style={{ width: '330mm', height: '215.9mm' }}>
                 <svg 
                   id={`svg-page-${pageIndex}`} 
                   xmlns="http://www.w3.org/2000/svg" 
+                  xmlnsXlink="http://www.w3.org/1999/xlink"
                   viewBox="0 0 330 215.9" 
                   width="100%" 
                   height="100%"
@@ -243,9 +246,9 @@ export default function App() {
                     const item = pageData[itemIndex];
                     if (!item) return null;
                     
-                    // Kalkulasi Koordinat Grid (3 Kolom x 2 Baris)
-                    const col = itemIndex % 3;
-                    const row = Math.floor(itemIndex / 3);
+                    // PERBAIKAN: Kalkulasi Koordinat Grid - Mengisi ke bawah terlebih dahulu (Atas -> Bawah, Kiri -> Kanan)
+                    const col = Math.floor(itemIndex / 2);
+                    const row = itemIndex % 2;
                     const x = 7.5 + (col * 105); // 104mm width + 1mm gap + 7.5mm margin keliling
                     const y = 3.5 + (row * 105); 
                     
@@ -262,9 +265,9 @@ export default function App() {
                         {/* Konten Dalam Wobbler */}
                         <g clipPath={`url(#clip-circle-${pageIndex}-${itemIndex})`}>
                           
-                          {/* 1. Template Background */}
+                          {/* 1. Template Background - Menggunakan href dan xlinkHref untuk kompatibilitas CorelDraw maksimal */}
                           {templateImg ? (
-                            <image href={templateImg} width="104" height="104" preserveAspectRatio="none" />
+                            <image href={templateImg} xlinkHref={templateImg} width="104" height="104" preserveAspectRatio="none" />
                           ) : (
                             <circle cx="52" cy="52" r="52" fill="#3b82f6" />
                           )}
@@ -295,7 +298,7 @@ export default function App() {
 
                           {/* 6. Gambar Produk */}
                           {imgSrc && (
-                            <image href={imgSrc} x="58" y="38" width="38" height="34" preserveAspectRatio="xMidYMid meet" />
+                            <image href={imgSrc} xlinkHref={imgSrc} x="58" y="38" width="38" height="34" preserveAspectRatio="xMidYMid meet" />
                           )}
 
                           {/* 7. Keterangan Bawah */}
