@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 
 // Ikon Lucide (Inline SVG)
 const UploadIcon = () => (
@@ -13,18 +13,15 @@ const PrinterIcon = () => (
 
 const printStyles = `
   @media print {
-    @page { size: 215mm 330mm; margin: 10mm; }
+    @page { size: 330mm 215mm; margin: 3mm; }
     body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     .no-print { display: none !important; }
     .print-container { margin: 0; padding: 0; width: 100%; }
     .print-page {
       page-break-after: always;
-      display: grid !important;
-      grid-template-columns: repeat(3, 1fr) !important;
-      grid-template-rows: repeat(2, 1fr) !important;
-      gap: 10mm 5mm !important;
-      width: 195mm; height: 310mm;
-      align-items: start; justify-items: center;
+      display: flex !important;
+      width: 324mm; height: 209mm;
+      align-items: center; justify-content: center;
     }
   }
 `;
@@ -33,41 +30,86 @@ export default function App() {
   const [data, setData] = useState([]);
   const [images, setImages] = useState({});
   const [templateImg, setTemplateImg] = useState(null);
+  const [toastMsg, setToastMsg] = useState("");
   
   const fileInputRef = useRef(null);
   const imageInputRef = useRef(null);
   const templateInputRef = useRef(null);
 
-  const downloadTemplate = () => {
-    const csvContent = "nama_produk,harga_promo,satuan,periode,nama_file_gambar,keterangan_bawah\nCHUPA CHUPS BIGBABOL 3.8G ASSORTED,12.790,/ 1 PCS,6 - 15 JUNI 2026,chupa_babol.jpg,Promo Khusus Member\nHAPPYDENT COOL WHITE MINT BLISTER 10PCS,3.800,/ 1 PCS,6 - 15 JUNI 2026,happydent.jpg,Promo Khusus Member";
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = 'template_wobbler.csv';
-    link.click();
+  // Memuat library SheetJS (xlsx) secara dinamis agar kompatibel dengan pratinjau browser
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !window.XLSX) {
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+      script.async = true;
+      document.body.appendChild(script);
+    }
+  }, []);
+
+  const showToast = (msg) => {
+    setToastMsg(msg);
+    setTimeout(() => setToastMsg(""), 4000);
   };
 
-  const handleCSVUpload = (e) => {
+  const downloadTemplate = () => {
+    if (!window.XLSX) {
+      showToast("Library Excel masih memuat, silakan coba beberapa detik lagi.");
+      return;
+    }
+
+    const templateData = [
+      {
+        "nama_produk": "CHUPA CHUPS BIGBABOL 3.8G ASSORTED",
+        "harga_promo": "12.790",
+        "satuan": "/ 1 PCS",
+        "periode": "6 - 15 JUNI 2026",
+        "nama_file_gambar": "chupa_babol.jpg",
+        "keterangan_bawah": "Promo Khusus Member"
+      },
+      {
+        "nama_produk": "HAPPYDENT COOL WHITE MINT BLISTER 10PCS",
+        "harga_promo": "3.800",
+        "satuan": "/ 1 PCS",
+        "periode": "6 - 15 JUNI 2026",
+        "nama_file_gambar": "happydent.jpg",
+        "keterangan_bawah": "Promo Khusus Member"
+      }
+    ];
+
+    const ws = window.XLSX.utils.json_to_sheet(templateData);
+    const wb = window.XLSX.utils.book_new();
+    window.XLSX.utils.book_append_sheet(wb, ws, "DataPromo");
+
+    window.XLSX.writeFile(wb, "template_wobbler.xlsx");
+  };
+
+  const handleExcelUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const text = event.target.result;
-      const rows = text.split('\n');
-      const headers = rows[0].split(',').map(h => h.trim());
-      const parsedData = [];
-      for (let i = 1; i < rows.length; i++) {
-        if (!rows[i].trim()) continue;
-        const values = rows[i].split(',').map(v => v.trim());
-        const rowData = {};
-        headers.forEach((header, index) => {
-          rowData[header] = values[index];
+
+    if (!window.XLSX) {
+      showToast("Library Excel masih memuat, silakan coba beberapa detik lagi.");
+      return;
+    }
+
+        // Ambil sheet pertama
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+
+        // PERBAIKAN DI SINI: Tambahkan `raw: false` agar angka yang diformat (seperti 12.790)
+        // dibaca persis seperti teks yang terlihat di layar Excel, bukan nilai aslinya.
+        const jsonData = window.XLSX.utils.sheet_to_json(worksheet, { 
+          defval: "", 
+          raw: false 
         });
-        parsedData.push(rowData);
+        
+        setData(jsonData);
+      } catch (error) {
+        showToast("Gagal membaca file Excel. Pastikan formatnya sudah benar.");
+        console.error(error);
       }
-      setData(parsedData);
     };
-    reader.readAsText(file);
+    reader.readAsArrayBuffer(file);
   };
 
   const handleImageUpload = (e) => {
@@ -93,6 +135,13 @@ export default function App() {
     <div className="min-h-screen bg-gray-50 text-gray-900 font-sans">
       <style>{printStyles}</style>
 
+      {/* Pesan Notifikasi (Toast) */}
+      {toastMsg && (
+        <div className="fixed top-6 right-6 bg-red-600 text-white px-5 py-3 rounded-lg shadow-xl z-[100] transition-opacity font-medium text-sm">
+          {toastMsg}
+        </div>
+      )}
+
       {/* Header & Controls */}
       <div className="no-print p-6 bg-white shadow-sm border-b sticky top-0 z-50">
         <div className="max-w-6xl mx-auto">
@@ -102,8 +151,8 @@ export default function App() {
               <p className="text-gray-500 text-sm">Versi Custom Background Template</p>
             </div>
             <div className="flex space-x-3">
-              <button onClick={downloadTemplate} className="flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm font-medium">
-                <DownloadIcon /> <span className="ml-2">Template CSV</span>
+              <button onClick={downloadTemplate} className="flex items-center px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 text-sm font-medium border border-green-300">
+                <DownloadIcon /> <span className="ml-2">Template Excel</span>
               </button>
               <button onClick={() => window.print()} disabled={data.length === 0} className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium disabled:opacity-50">
                 <PrinterIcon /> <span className="ml-2">Cetak ke PDF (F4)</span>
@@ -114,10 +163,10 @@ export default function App() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-blue-50 p-4 rounded-xl border border-blue-100">
             {/* Step 1 */}
             <div className="space-y-2">
-              <h3 className="font-semibold text-sm text-blue-900">1. Upload CSV</h3>
-              <input type="file" accept=".csv" onChange={handleCSVUpload} ref={fileInputRef} className="hidden" />
+              <h3 className="font-semibold text-sm text-blue-900">1. Upload File Data</h3>
+              <input type="file" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" onChange={handleExcelUpload} ref={fileInputRef} className="hidden" />
               <div onClick={() => fileInputRef.current?.click()} className="border-2 border-dashed border-blue-300 rounded-lg p-4 text-center cursor-pointer hover:bg-white bg-blue-50/50">
-                <p className="text-xs text-gray-600">{data.length > 0 ? <span className="font-bold text-green-600">{data.length} baris dimuat</span> : "Pilih file .csv"}</p>
+                <p className="text-xs text-gray-600">{data.length > 0 ? <span className="font-bold text-green-600">{data.length} baris dimuat</span> : "Pilih file .xlsx / .csv"}</p>
               </div>
             </div>
 
@@ -139,6 +188,11 @@ export default function App() {
               </div>
             </div>
           </div>
+          
+          <div className="mt-4 text-xs text-gray-500 bg-yellow-50 border border-yellow-200 p-3 rounded-lg">
+            <strong className="text-yellow-800">⚠️ Penting saat mencetak:</strong> Pastikan settingan printer Anda pada browser: 
+            <strong> Paper Size: F4 (atau 8.5 x 13 inch), Orientation: Landscape (Mendatar), Margins: None / Default, Scale: 100%, </strong> dan centang <strong>"Background graphics"</strong>.
+          </div>
         </div>
       </div>
 
@@ -149,15 +203,22 @@ export default function App() {
         ) : (
           <div className="flex flex-col items-center gap-10">
             {chunkedData.map((pageData, pageIndex) => (
-              <div key={`page-${pageIndex}`} className="print-page bg-white shadow-lg border relative" style={{ width: '215mm', minHeight: '330mm', padding: '10mm', boxSizing: 'border-box' }}>
-                <div className="grid grid-cols-3 grid-rows-2 gap-[10mm] w-full h-full">
+              <div key={`page-${pageIndex}`} className="print-page bg-white shadow-lg border relative flex items-center justify-center" style={{ width: '330mm', minHeight: '215mm', padding: '3mm', boxSizing: 'border-box' }}>
+                
+                <div 
+                  className="grid grid-flow-col gap-[1mm]" 
+                  style={{ 
+                    gridTemplateColumns: 'repeat(3, 104mm)', 
+                    gridTemplateRows: 'repeat(2, 104mm)' 
+                  }}
+                >
                   {Array.from({ length: 6 }).map((_, itemIndex) => {
                     const item = pageData[itemIndex];
                     if (!item) return <div key={`empty-${itemIndex}`}></div>;
                     const imgSrc = images[item.nama_file_gambar] || '';
 
                     return (
-                      <div key={`wobbler-${itemIndex}`} className="w-[64mm] h-[64mm] rounded-full mx-auto relative overflow-hidden" 
+                      <div key={`wobbler-${itemIndex}`} className="w-[104mm] h-[104mm] rounded-full relative overflow-hidden" 
                            style={{ 
                              backgroundImage: templateImg ? `url(${templateImg})` : 'radial-gradient(circle, #3b82f6 0%, #1e3a8a 100%)',
                              backgroundSize: '100% 100%', 
@@ -168,29 +229,29 @@ export default function App() {
                         
                         {/* Fallback Jika Tidak Ada Template */}
                         {!templateImg && (
-                           <div className="absolute top-[8%] w-full text-center text-white text-[8px] font-bold">BEXmart<br/>PROMO SUPER HEMAT<br/>(UPLOAD TEMPLATE PNG)</div>
+                           <div className="absolute top-[8%] w-full text-center text-white text-[13px] font-bold">BEXmart<br/>PROMO SUPER HEMAT<br/>(UPLOAD TEMPLATE PNG)</div>
                         )}
 
                         {/* Teks Periode (Pita Kuning Atas) */}
-                        <div className="absolute top-[30.5%] w-full text-center text-[5.5px] font-extrabold text-black uppercase tracking-tight z-10">
+                        <div className="absolute top-[30%] w-full text-center text-[13px] font-extrabold text-black uppercase tracking-tight z-10">
                           PERIODE: {item.periode || 'TANGGAL BELUM DISET'}
                         </div>
 
                         {/* Nama Produk (Kiri Area Putih) */}
-                        <div className="absolute top-[42%] left-[8%] w-[42%] text-[7.5px] font-bold text-black text-left leading-tight z-10">
+                        <div className="absolute top-[42%] left-[8%] w-[42%] text-[12px] font-bold text-black text-left leading-tight z-10">
                           {item.nama_produk || 'NAMA PRODUK'}
                         </div>
 
                         {/* Teks "KINI HANYA" (Kotak Kuning Kecil) */}
-                        <div className="absolute top-[57%] left-[9%] text-[5px] font-black text-black z-10">
+                        <div className="absolute top-[58%] left-[14%] text-[11px] font-black text-black z-10 tracking-wide">
                           KINI HANYA
                         </div>
 
                         {/* Area Harga (Blok Merah) */}
-                        <div className="absolute top-[63%] left-[8%] flex items-baseline text-white z-10">
-                          <span className="text-[7.5px] font-bold mr-[1px]">Rp</span>
-                          <span className="text-[20px] font-black tracking-tighter leading-none">{item.harga_promo || '0'}</span>
-                          <span className="text-[6.5px] font-bold ml-[2px]">{item.satuan || '/ PCS'}</span>
+                        <div className="absolute top-[65.5%] left-[13.5%] flex items-baseline text-white z-10">
+                          <span className="text-[16px] font-bold mr-[1px]">Rp</span>
+                          <span className="text-[42px] font-black tracking-tighter leading-none">{item.harga_promo || '0'}</span>
+                          <span className="text-[10px] font-bold ml-[3px]">{item.satuan || '/ PCS'}</span>
                         </div>
 
                         {/* Gambar Produk (Kanan Area Putih) */}
@@ -198,12 +259,12 @@ export default function App() {
                           {imgSrc ? (
                             <img src={imgSrc} className="max-w-full max-h-full object-contain drop-shadow-md" />
                           ) : (
-                            <div className="text-[5px] text-gray-400 border border-gray-300 p-1">No Img</div>
+                            <div className="text-[9px] text-gray-400 border border-gray-300 p-1">No Img</div>
                           )}
                         </div>
 
                         {/* Keterangan Bawah (Area Biru Paling Bawah) */}
-                        <div className="absolute bottom-[3%] w-full text-center text-[5.5px] font-bold text-white z-10">
+                        <div className="absolute bottom-[3%] w-full text-center text-[9px] font-bold text-white z-10">
                           {item.keterangan_bawah || 'Promo Khusus Member'}
                         </div>
 
