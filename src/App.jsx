@@ -7,22 +7,39 @@ const UploadIcon = () => (
 const DownloadIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
 );
-const ImageIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+const PrinterIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
 );
+
+const printStyles = `
+  @media print {
+    @page { size: 330mm 215mm; margin: 3mm; }
+    body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    .no-print { display: none !important; }
+    .print-container { margin: 0; padding: 0; width: 100%; background-color: transparent; }
+    .print-page {
+      page-break-after: always;
+      display: flex !important;
+      width: 324mm; height: 209mm;
+      align-items: center; justify-content: center;
+      box-shadow: none !important;
+      border: none !important;
+      background-color: transparent !important;
+    }
+  }
+`;
 
 export default function App() {
   const [data, setData] = useState([]);
   const [images, setImages] = useState({});
   const [templateImg, setTemplateImg] = useState(null);
   const [toastMsg, setToastMsg] = useState("");
-  const [isGenerating, setIsGenerating] = useState(false);
   
   const fileInputRef = useRef(null);
   const imageInputRef = useRef(null);
   const templateInputRef = useRef(null);
 
-  // Memuat library SheetJS (xlsx) & html2canvas secara dinamis
+  // Memuat library SheetJS (xlsx) secara dinamis
   useEffect(() => {
     const loadScript = (src, globalVar) => {
       if (typeof window !== 'undefined' && !window[globalVar]) {
@@ -34,12 +51,11 @@ export default function App() {
     };
     
     loadScript('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js', 'XLSX');
-    loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js', 'html2canvas');
   }, []);
 
   const showToast = (msg) => {
     setToastMsg(msg);
-    setTimeout(() => setToastMsg(""), 4000);
+    setTimeout(() => setToastMsg(""), 5000);
   };
 
   const downloadTemplate = () => {
@@ -116,7 +132,7 @@ export default function App() {
     reader.readAsArrayBuffer(file);
   };
 
-  // PERBAIKAN 1: Membaca gambar produk sebagai DataURL (Base64)
+  // Membaca gambar produk sebagai DataURL (Base64)
   const handleImageUpload = async (e) => {
     const files = Array.from(e.target.files);
     const newImages = { ...images };
@@ -135,7 +151,7 @@ export default function App() {
     setImages(newImages);
   };
 
-  // PERBAIKAN 2: Membaca Template Background sebagai DataURL (Base64)
+  // Membaca Template Background sebagai DataURL (Base64)
   const handleTemplateUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -147,46 +163,6 @@ export default function App() {
     }
   };
 
-  // Fungsi mengubah HTML ke Gambar PNG
-  const handleSaveAllImages = async () => {
-    if (!window.html2canvas) {
-      showToast("Library penyimpan gambar sedang dimuat, coba lagi sebentar.");
-      return;
-    }
-
-    setIsGenerating(true);
-    showToast("Sedang memproses gambar. Mohon tunggu...");
-
-    try {
-      for (let i = 0; i < chunkedData.length; i++) {
-        const element = document.getElementById(`page-${i}`);
-        if (element) {
-          const canvas = await window.html2canvas(element, {
-            scale: 2, // Resolusi tinggi
-            useCORS: true,
-            allowTaint: true, // Mengizinkan elemen lintas sumber jika ada
-            backgroundColor: "#ffffff",
-            logging: false
-          });
-          
-          const link = document.createElement('a');
-          link.download = `BEXmart_Wobbler_F4_Hal_${i + 1}.png`;
-          link.href = canvas.toDataURL('image/png');
-          link.click();
-
-          // Jeda sedikit agar memori browser tidak hang
-          await new Promise(resolve => setTimeout(resolve, 800));
-        }
-      }
-      showToast("Semua gambar berhasil diunduh!");
-    } catch (error) {
-      console.error("Gagal membuat gambar:", error);
-      showToast("Terjadi kesalahan sistem saat merender gambar.");
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
   const chunkedData = [];
   for (let i = 0; i < data.length; i += 6) {
     chunkedData.push(data.slice(i, i + 6));
@@ -194,6 +170,8 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 font-sans pb-20">
+      <style>{printStyles}</style>
+
       {/* Pesan Notifikasi (Toast) */}
       {toastMsg && (
         <div className="fixed top-6 right-6 bg-blue-600 text-white px-5 py-3 rounded-lg shadow-xl z-[100] transition-opacity font-medium text-sm">
@@ -201,24 +179,13 @@ export default function App() {
         </div>
       )}
 
-      {/* Overlay Loading saat Generate Gambar */}
-      {isGenerating && (
-        <div className="fixed inset-0 bg-black/60 z-[200] flex flex-col items-center justify-center">
-          <div className="bg-white p-6 rounded-xl shadow-2xl flex flex-col items-center">
-            <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mb-4"></div>
-            <h2 className="text-lg font-bold text-blue-900">Menyiapkan Gambar Resolusi Tinggi...</h2>
-            <p className="text-sm text-gray-500 mt-2">Jangan tutup browser Anda</p>
-          </div>
-        </div>
-      )}
-
       {/* Header & Controls */}
-      <div className="p-6 bg-white shadow-sm border-b sticky top-0 z-50">
+      <div className="no-print p-6 bg-white shadow-sm border-b sticky top-0 z-50">
         <div className="max-w-6xl mx-auto">
           <div className="flex justify-between items-center mb-6">
             <div>
               <h1 className="text-2xl font-bold text-blue-700">BEXmart Wobbler Generator</h1>
-              <p className="text-gray-500 text-sm">Simpan sebagai Gambar Resolusi Tinggi (PNG)</p>
+              <p className="text-gray-500 text-sm">Mode Cetak PDF (F4 Landscape)</p>
             </div>
             <div className="flex space-x-3">
               <button onClick={downloadTemplate} className="flex items-center px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 text-sm font-medium border border-green-300 transition-colors">
@@ -226,13 +193,13 @@ export default function App() {
               </button>
               
               <button 
-                onClick={handleSaveAllImages} 
-                disabled={data.length === 0 || isGenerating} 
+                onClick={() => window.print()} 
+                disabled={data.length === 0} 
                 className={`flex items-center px-5 py-2 text-white rounded-lg text-sm font-bold shadow-md transition-all ${
                   data.length === 0 ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 hover:shadow-lg'
                 }`}
               >
-                <ImageIcon /> <span className="ml-2">Simpan Semua Gambar</span>
+                <PrinterIcon /> <span className="ml-2">Cetak ke PDF (F4)</span>
               </button>
             </div>
           </div>
@@ -266,101 +233,86 @@ export default function App() {
             </div>
           </div>
           
-          <div className="mt-4 text-xs text-blue-700 bg-blue-100 border border-blue-200 p-3 rounded-lg flex items-center">
-            <span className="text-xl mr-2">💡</span>
-            <p>Klik tombol <strong>Simpan Semua Gambar</strong> di pojok kanan atas. Sistem akan mengunduh lembar F4 siap cetak ke komputer Anda sebagai file gambar (.PNG) beresolusi tinggi.</p>
+          <div className="mt-4 text-xs text-gray-600 bg-yellow-50 border border-yellow-300 p-3 rounded-lg flex items-center">
+            <span className="text-xl mr-2 text-yellow-500">⚠️</span>
+            <p><strong>Penting saat mencetak:</strong> Pastikan settingan printer Anda: <strong>Paper Size: F4 (atau 8.5 x 13 inch), Orientation: Landscape (Mendatar), Margins: None / Default, Scale: 100%,</strong> dan centang <strong>"Background graphics"</strong>.</p>
           </div>
         </div>
       </div>
 
       {/* Area Pratinjau & Rendering Gambar */}
-      <div className="max-w-6xl mx-auto py-8">
+      <div className="print-container max-w-6xl mx-auto py-8">
         {data.length === 0 ? (
-          <div className="text-center py-20 text-gray-400">Silakan upload data Excel Anda di atas.</div>
+          <div className="no-print text-center py-20 text-gray-400">Silakan upload data Excel Anda di atas.</div>
         ) : (
           <div className="flex flex-col items-center gap-14">
             {chunkedData.map((pageData, pageIndex) => (
-              <div key={`page-wrapper-${pageIndex}`} className="flex flex-col items-center">
-                <div className="mb-3 text-sm font-bold text-gray-500 bg-white px-4 py-1 rounded-full shadow-sm border border-gray-200">
+              <div key={`page-wrapper-${pageIndex}`} className="print-page flex flex-col items-center bg-white shadow-xl relative" style={{ width: '330mm', minHeight: '215mm', padding: '3mm', boxSizing: 'border-box' }}>
+                <div className="no-print absolute -top-8 text-sm font-bold text-gray-500 bg-white px-4 py-1 rounded-full shadow-sm border border-gray-200">
                   Pratinjau Lembar F4 - Ke {pageIndex + 1}
                 </div>
                 
-                {/* INI ADALAH KANVAS YANG AKAN DISIMPAN MENJADI GAMBAR */}
+                {/* AREA WOBBLER */}
                 <div 
-                  id={`page-${pageIndex}`} 
-                  className="bg-white shadow-xl relative flex items-center justify-center overflow-hidden" 
-                  style={{ width: '330mm', height: '215mm', padding: '3mm', boxSizing: 'border-box' }}
+                  className="grid grid-flow-col gap-[1mm] h-full items-center" 
+                  style={{ 
+                    gridTemplateColumns: 'repeat(3, 104mm)', 
+                    gridTemplateRows: 'repeat(2, 104mm)' 
+                  }}
                 >
-                  <div 
-                    className="grid grid-flow-col gap-[1mm]" 
-                    style={{ 
-                      gridTemplateColumns: 'repeat(3, 104mm)', 
-                      gridTemplateRows: 'repeat(2, 104mm)' 
-                    }}
-                  >
-                    {Array.from({ length: 6 }).map((_, itemIndex) => {
-                      const item = pageData[itemIndex];
-                      if (!item) return <div key={`empty-${itemIndex}`}></div>;
-                      const imgSrc = images[item.nama_file_gambar] || '';
+                  {Array.from({ length: 6 }).map((_, itemIndex) => {
+                    const item = pageData[itemIndex];
+                    if (!item) return <div key={`empty-${itemIndex}`}></div>;
+                    const imgSrc = images[item.nama_file_gambar] || '';
 
-                      return (
-                        <div key={`wobbler-${itemIndex}`} className="w-[104mm] h-[104mm] rounded-full relative overflow-hidden" 
-                             style={{ 
-                               border: templateImg ? 'none' : '3px solid white',
-                               // Diganti fallbacknya agar tidak bergantung sepenuhnya pada background-image jika error
-                               background: templateImg ? 'transparent' : 'radial-gradient(circle, #3b82f6 0%, #1e3a8a 100%)',
-                             }}>
-                          
-                          {/* PERBAIKAN 3: Background Template Menggunakan Tag <img> Murni bukan background CSS */}
-                          {templateImg && (
-                            <img src={templateImg} alt="template" className="absolute inset-0 w-full h-full object-fill z-0" />
-                          )}
+                    return (
+                      <div key={`wobbler-${itemIndex}`} className="w-[104mm] h-[104mm] rounded-full relative overflow-hidden" 
+                           style={{ 
+                             border: templateImg ? 'none' : '3px solid white',
+                             background: templateImg ? 'transparent' : 'radial-gradient(circle, #3b82f6 0%, #1e3a8a 100%)',
+                           }}>
+                        
+                        {templateImg && (
+                          <img src={templateImg} alt="template" className="absolute inset-0 w-full h-full object-fill z-0" />
+                        )}
 
-                          {/* Fallback Jika Tidak Ada Template */}
-                          {!templateImg && (
-                             <div className="absolute top-[8%] w-full text-center text-white text-[13px] font-bold z-10">BEXmart<br/>PROMO SUPER HEMAT<br/>(UPLOAD TEMPLATE PNG)</div>
-                          )}
+                        {!templateImg && (
+                           <div className="absolute top-[8%] w-full text-center text-white text-[13px] font-bold z-10">BEXmart<br/>PROMO SUPER HEMAT<br/>(UPLOAD TEMPLATE PNG)</div>
+                        )}
 
-                          {/* Teks Periode */}
-                          <div className="absolute top-[30%] w-full text-center text-[13px] font-extrabold text-black uppercase tracking-tight z-10">
-                            {item.periode || ''}
-                          </div>
-
-                          {/* Nama Produk */}
-                          <div className="absolute top-[42%] left-[8%] w-[42%] text-[12px] font-bold text-black text-left leading-tight z-10">
-                            {item.nama_produk || ''}
-                          </div>
-
-                          {/* Teks "KINI HANYA" */}
-                          <div className="absolute top-[58%] left-[14%] text-[11px] font-black text-black z-10 tracking-wide">
-                            KINI HANYA
-                          </div>
-
-                          {/* Area Harga */}
-                          <div className="absolute top-[65.5%] left-[13.5%] flex items-baseline text-white z-10">
-                            <span className="text-[16px] font-bold mr-[1px]">Rp</span>
-                            <span className="text-[42px] font-black tracking-tighter leading-none">{item.harga_promo || ''}</span>
-                            <span className="text-[10px] font-bold ml-[3px]">{item.satuan || ''}</span>
-                          </div>
-
-                          {/* Gambar Produk */}
-                          <div className="absolute top-[37%] right-[8%] w-[38%] h-[32%] flex justify-center items-center z-10 bg-transparent">
-                            {imgSrc ? (
-                              <img src={imgSrc} className="max-w-full max-h-full object-contain drop-shadow-md z-10" />
-                            ) : (
-                              <div className="text-[9px] text-gray-400 border border-gray-300 p-1 bg-white z-10">No Img</div>
-                            )}
-                          </div>
-
-                          {/* Keterangan Bawah */}
-                          <div className="absolute bottom-[3%] w-full text-center text-[9px] font-bold text-white z-10">
-                            {item.keterangan_bawah || ''}
-                          </div>
-
+                        <div className="absolute top-[30%] w-full text-center text-[13px] font-extrabold text-black uppercase tracking-tight z-10">
+                          {item.periode || ''}
                         </div>
-                      );
-                    })}
-                  </div>
+
+                        <div className="absolute top-[42%] left-[8%] w-[42%] text-[12px] font-bold text-black text-left leading-tight z-10">
+                          {item.nama_produk || ''}
+                        </div>
+
+                        <div className="absolute top-[58%] left-[14%] text-[11px] font-black text-black z-10 tracking-wide">
+                          KINI HANYA
+                        </div>
+
+                        <div className="absolute top-[65.5%] left-[13.5%] flex items-baseline text-white z-10">
+                          <span className="text-[16px] font-bold mr-[1px]">Rp</span>
+                          <span className="text-[42px] font-black tracking-tighter leading-none">{item.harga_promo || ''}</span>
+                          <span className="text-[10px] font-bold ml-[3px]">{item.satuan || ''}</span>
+                        </div>
+
+                        <div className="absolute top-[37%] right-[8%] w-[38%] h-[32%] flex justify-center items-center z-10 bg-transparent">
+                          {imgSrc ? (
+                            <img src={imgSrc} className="max-w-full max-h-full object-contain z-10" />
+                          ) : (
+                            <div className="text-[9px] text-gray-400 border border-gray-300 p-1 bg-white z-10">No Img</div>
+                          )}
+                        </div>
+
+                        <div className="absolute bottom-[3%] w-full text-center text-[9px] font-bold text-white z-10">
+                          {item.keterangan_bawah || ''}
+                        </div>
+
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             ))}
